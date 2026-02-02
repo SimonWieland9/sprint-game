@@ -62,7 +62,7 @@ export class GameScene extends Phaser.Scene {
             {
                 id: 4,
                 keys: [Phaser.Input.Keyboard.KeyCodes.NINE, Phaser.Input.Keyboard.KeyCodes.ZERO],
-                boostKey: Phaser.Input.Keyboard.KeyCodes.M,
+                boostKey: Phaser.Input.Keyboard.KeyCodes.QUOTES,
                 color: 0xffff00, x: 100, y: laneStart + (laneHeight * 3) // Neon Yellow
             }
         ];
