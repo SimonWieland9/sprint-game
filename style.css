@@ -1,0 +1,15 @@
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #1a1a1a;
+  justify-content: center;
+}
+
+#app {
+  width: 1024px;
+  height: 768px;
+  margin: 0 auto;
+}
