@@ -8,13 +8,15 @@ export class GameScene extends Phaser.Scene {
         this.FINISH_LINE_X = 100 + (this.TRACK_LENGTH_METERS * this.PIXELS_PER_METER);
     }
 
-    create() {
-        console.log('GameScene: create started');
+    create(data) {
+        console.log('GameScene: create started', data);
+        this.playerData = data ? data.playerData : null;
+
         this.cameras.main.setBackgroundColor('#10102a'); // Deep Arcade Blue
 
         // --- Setup World ---
         const worldWidth = this.FINISH_LINE_X + 400;
-        const worldHeight = 1100; // Increased height to fit shifted track
+        const worldHeight = 1500; // Increased height significantly to fix HUD overlap
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
@@ -33,43 +35,46 @@ export class GameScene extends Phaser.Scene {
         this.isRacing = false;
 
         // --- Players ---
-        const playerCount = this.registry.get('playerCount') || 2;
+        // Use playerData from SetupScene if available, otherwise defaults (for debug/direct load)
+        let activeConfigs = [];
+        if (this.playerData && this.playerData.length > 0) { // Added check for this.playerData existence
+            activeConfigs = this.playerData.map(p => ({
+                id: p.id,
+                keys: [Phaser.Input.Keyboard.KeyCodes[p.keys.left], Phaser.Input.Keyboard.KeyCodes[p.keys.right]],
+                boostKey: Phaser.Input.Keyboard.KeyCodes[p.keys.join],
+                countryIndex: p.countryIndex
+            }));
+        } else {
+            // Fallback (for direct dev refresh)
+            const playerCount = this.registry.get('playerCount') || 2;
+            const defaults = [
+                { id: 1, keys: ['LEFT', 'RIGHT'], boostKey: 'UP', countryIndex: 0 },
+                { id: 2, keys: ['ONE', 'TWO'], boostKey: 'THREE', countryIndex: 1 },
+                { id: 3, keys: ['V', 'B'], boostKey: 'N', countryIndex: 2 },
+                { id: 4, keys: ['NINE', 'ZERO'], boostKey: 'QUOTES', countryIndex: 3 }
+            ];
+            activeConfigs = defaults.slice(0, playerCount).map(d => ({
+                id: d.id,
+                keys: [Phaser.Input.Keyboard.KeyCodes[d.keys[0]], Phaser.Input.Keyboard.KeyCodes[d.keys[1]]],
+                boostKey: Phaser.Input.Keyboard.KeyCodes[d.boostKey],
+                countryIndex: d.countryIndex
+            }));
+        }
 
-        // Shifted down by 120px to clear HUD (was 200)
-        const laneStart = 320;
+        // OLD: laneStart = 320.
+        // FIX: Shift down by 180px -> 500
+        const laneStart = 500;
         const laneHeight = 140;
 
         // Player Colors updated to Neon Palette
-        const playerConfigs = [
-            {
-                id: 1,
-                keys: [Phaser.Input.Keyboard.KeyCodes.LEFT, Phaser.Input.Keyboard.KeyCodes.RIGHT],
-                boostKey: Phaser.Input.Keyboard.KeyCodes.UP,
-                color: 0xff0055, x: 100, y: laneStart // Neon Red/Pink
-            },
-            {
-                id: 2,
-                keys: [Phaser.Input.Keyboard.KeyCodes.ONE, Phaser.Input.Keyboard.KeyCodes.TWO],
-                boostKey: Phaser.Input.Keyboard.KeyCodes.THREE,
-                color: 0x00ff00, x: 100, y: laneStart + laneHeight // Neon Green
-            },
-            {
-                id: 3,
-                keys: [Phaser.Input.Keyboard.KeyCodes.V, Phaser.Input.Keyboard.KeyCodes.B],
-                boostKey: Phaser.Input.Keyboard.KeyCodes.N,
-                color: 0x00ffff, x: 100, y: laneStart + (laneHeight * 2) // Neon Cyan
-            },
-            {
-                id: 4,
-                keys: [Phaser.Input.Keyboard.KeyCodes.NINE, Phaser.Input.Keyboard.KeyCodes.ZERO],
-                boostKey: Phaser.Input.Keyboard.KeyCodes.QUOTES,
-                color: 0xffff00, x: 100, y: laneStart + (laneHeight * 3) // Neon Yellow
-            }
-        ];
+        // The original playerConfigs array is replaced by activeConfigs logic above.
 
         this.players = [];
-        for (let i = 0; i < playerCount; i++) {
-            this.players.push(new Player(this, playerConfigs[i].id, playerConfigs[i]));
+        for (let i = 0; i < activeConfigs.length; i++) {
+            const config = activeConfigs[i];
+            config.x = 100;
+            config.y = laneStart + (i * laneHeight);
+            this.players.push(new Player(this, config.id, config));
         }
 
         // --- UI ---
@@ -105,7 +110,7 @@ export class GameScene extends Phaser.Scene {
         console.log('GameScene: drawTrack');
         const graphics = this.add.graphics();
         const laneHeight = 140;
-        const startY = 250; // Shifted down (was 130)
+        const startY = 430; // laneStart (500) - 70 (half lane height) roughly, to center players in lanes
         const totalHeight = laneHeight * 4;
 
         // --- Background Gfx ---
@@ -113,9 +118,9 @@ export class GameScene extends Phaser.Scene {
         graphics.lineStyle(1, 0xffffff, 0.05);
         for (let x = 0; x < this.FINISH_LINE_X + 1000; x += 100) {
             graphics.moveTo(x, 0);
-            graphics.lineTo(x, 1100);
+            graphics.lineTo(x, 1500); // Updated height
         }
-        for (let y = 0; y < 1100; y += 100) {
+        for (let y = 0; y < 1500; y += 100) {
             graphics.moveTo(0, y);
             graphics.lineTo(this.FINISH_LINE_X + 1000, y);
         }
@@ -123,11 +128,11 @@ export class GameScene extends Phaser.Scene {
 
         // Track Surface (Dark)
         graphics.fillStyle(0x000000, 0.5);
-        graphics.fillRect(0, startY, this.FINISH_LINE_X + 1000, totalHeight + 100);
+        graphics.fillRect(0, startY, this.FINISH_LINE_X + 1000, totalHeight);
 
         // Lanes (Neon Glow)
         graphics.lineStyle(4, 0x00ffff, 0.2); // Faint Cyan
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i <= 4; i++) {
             const y = startY + (i * laneHeight);
             graphics.moveTo(0, y);
             graphics.lineTo(this.FINISH_LINE_X + 1000, y);

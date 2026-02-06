@@ -25,7 +25,7 @@ export class MainMenu extends Phaser.Scene {
             .on('pointerdown', () => {
                 console.log('MainMenu: Start Race clicked');
                 this.scene.stop('MainMenu');
-                this.scene.start('GameScene');
+                this.scene.start('SetupScene');
             })
             .on('pointerover', () => startBtn.setStyle({ fill: '#fff' }))
             .on('pointerout', () => startBtn.setStyle({ fill: '#00ff00' }));

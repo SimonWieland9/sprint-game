@@ -1,15 +1,22 @@
+import { Countries } from '../config/Countries';
+
 export class Player {
     constructor(scene, id, config) {
         this.scene = scene;
         this.id = id;
         this.keys = config.keys;
-        this.color = config.color;
         this.x = config.x;
         this.y = config.y;
 
+        // Get Country Data
+        const countryIndex = config.countryIndex !== undefined ? config.countryIndex : 0;
+        this.country = Countries[countryIndex];
+        // Ensure default colors if country missing
+        this.colors = this.country ? this.country.colors : { primary: 0xffffff, secondary: 0x000000 };
+
         // Game constants
-        this.MAX_SPEED = 350; // Increased significantly (was 200) for faster races
-        this.ACCELERATION_RATE = 0.1;
+        this.MAX_SPEED = 250;
+        this.ACCELERATION_RATE = 0.08;
         this.DECEL_RATE = 0.05;
         this.STUMBLE_PENALTY = 0.75;
 
@@ -19,7 +26,7 @@ export class Player {
         this.distance = 0;
         this.rank = null;
         this.finished = false;
-        this.nextKeyIndex = 0;
+        this.nextKeyIndex = null; // null = either key starts
         this.tapTimestamps = [];
         this.isFalseStart = false;
 
@@ -38,26 +45,83 @@ export class Player {
 
         // Create Limbs (Anchored at top)
         // Groups for Z-ordering: [Left Arm, Left Leg] (Back) -> [Body, Head] -> [Right Leg, Right Arm] (Front)
-        // Actually, typical run cycle: Opposites.
 
-        // 1. Left Leg (Back)
-        this.leftLeg = this.scene.add.rectangle(0, 30, limbW, limbH, this.color).setOrigin(0.5, 0);
+        // 1. Left Leg (Back) - Shorts
+        this.leftLeg = this.scene.add.rectangle(0, 30, limbW, limbH, this.colors.secondary).setOrigin(0.5, 0);
         this.leftLeg.setStrokeStyle(2, strokeColor);
 
         // 2. Left Arm (Back)
         this.leftArm = this.scene.add.rectangle(0, -30, limbW, limbH, skinColor).setOrigin(0.5, 0);
         this.leftArm.setStrokeStyle(2, strokeColor);
 
-        // 3. Body
-        this.bodySprite = this.scene.add.rectangle(0, 0, bodyW, bodyH, this.color).setOrigin(0.5, 0.5);
-        this.bodySprite.setStrokeStyle(4, strokeColor);
+        // 3. Body (Split into Shirt and Shorts)
+        // Upper Body (Shirt)
+        this.shirt = this.scene.add.rectangle(0, -20, bodyW, 40, this.colors.primary).setOrigin(0.5, 0.5);
+        this.shirt.setStrokeStyle(4, strokeColor);
+
+        // Lower Body (Shorts)
+        this.shorts = this.scene.add.rectangle(0, 20, bodyW, 40, this.colors.secondary).setOrigin(0.5, 0.5);
+        this.shorts.setStrokeStyle(4, strokeColor);
+
+        // Badge (Country Sprite) on Shirt
+        // Badge (Country Sprite) on Shirt
+        const badgeColor = this.colors.badge !== undefined ? this.colors.badge : 0xffffff;
+
+        // Custom Kit Logic
+        if (this.country && this.country.code === 'GER') {
+            // German Flag Shirt (Black/Red/Gold Horizontal Stripes)
+            // Masking original shirt or just drawing over it
+            const h = 40 / 3; // height of each stripe
+            const top = this.scene.add.rectangle(0, -20 - h, bodyW, h, 0x000000);
+            const mid = this.scene.add.rectangle(0, -20, bodyW, h, 0xDD0000);
+            const bot = this.scene.add.rectangle(0, -20 + h, bodyW, h, 0xFFCE00);
+
+            this.badge = this.scene.add.container(0, 0, [top, mid, bot]); // Not really a badge, but replaces local visuals
+        } else if (this.country && this.country.code === 'USA') {
+            // USA: Blue Shirt with Stars
+            this.badge = this.scene.add.container(0, -20);
+            const star1 = this.scene.add.text(-10, -5, '★', { fontSize: '12px', fill: '#ffffff' }).setOrigin(0.5);
+            const star2 = this.scene.add.text(10, -5, '★', { fontSize: '12px', fill: '#ffffff' }).setOrigin(0.5);
+            const star3 = this.scene.add.text(0, 5, '★', { fontSize: '12px', fill: '#ffffff' }).setOrigin(0.5);
+            this.badge.add([star1, star2, star3]);
+        } else if (this.country && this.country.code === 'SUI') {
+            // Switzerland: White Cross
+            this.badge = this.scene.add.container(0, -20);
+            const vBar = this.scene.add.rectangle(0, 0, 8, 24, 0xffffff);
+            const hBar = this.scene.add.rectangle(0, 0, 24, 8, 0xffffff);
+            this.badge.add([vBar, hBar]);
+        } else {
+            // Standard Circle Badge
+            this.badge = this.scene.add.circle(0, -20, 10, badgeColor).setStrokeStyle(1, 0x000000);
+        }
+
+        // Group body parts for easier animation if needed (though we anim limbs mainly)
+        this.bodySprite = this.scene.add.container(0, 0, [this.shirt, this.badge, this.shorts]);
 
         // 4. Head
-        this.head = this.scene.add.circle(0, -55, headR, skinColor);
-        this.head.setStrokeStyle(2, strokeColor);
+        // 4. Head Container
+        this.head = this.scene.add.container(0, -55);
 
-        // 5. Right Leg (Front)
-        this.rightLeg = this.scene.add.rectangle(0, 30, limbW, limbH, this.color).setOrigin(0.5, 0);
+        // Head Shape
+        const headShape = this.scene.add.circle(0, 0, headR, skinColor);
+        headShape.setStrokeStyle(2, strokeColor);
+
+        // Eyes (Side view - looking right)
+        const eyeOffsetX = 12; // Shifted more to the right edge
+        const eyeOffsetY = -5;
+        const eyeRadius = 5;
+
+        // Single Eye (White)
+        const eye = this.scene.add.circle(eyeOffsetX, eyeOffsetY, eyeRadius, 0xffffff);
+
+        // Pupil (Black) - looking forward (right)
+        const pupilRadius = 2.5;
+        const pupil = this.scene.add.circle(eyeOffsetX + 2, eyeOffsetY, pupilRadius, 0x000000);
+
+        this.head.add([headShape, eye, pupil]);
+
+        // 5. Right Leg (Front) - Shorts
+        this.rightLeg = this.scene.add.rectangle(0, 30, limbW, limbH, this.colors.secondary).setOrigin(0.5, 0);
         this.rightLeg.setStrokeStyle(2, strokeColor);
 
         // 6. Right Arm (Front)
@@ -124,10 +188,10 @@ export class Player {
 
         const now = this.scene.time.now;
 
-        if (keyIndex === this.nextKeyIndex) {
+        if (this.nextKeyIndex === null || keyIndex === this.nextKeyIndex) {
             this.tapTimestamps.push(now);
             this.tapTimestamps = this.tapTimestamps.filter(t => now - t < 1000);
-            this.nextKeyIndex = 1 - this.nextKeyIndex;
+            this.nextKeyIndex = 1 - keyIndex; // Expect the OTHER key next time
 
             // Reaction Boost (First step)
             if (!this.stepsTaken) {

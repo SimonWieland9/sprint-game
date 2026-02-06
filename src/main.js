@@ -5,6 +5,8 @@ import { MainMenu } from './scenes/MainMenu';
 import { SettingsScene } from './scenes/SettingsScene';
 import { UIScene } from './scenes/UIScene';
 
+import { SetupScene } from './scenes/SetupScene';
+
 const config = {
   type: Phaser.AUTO,
   width: 1024,
@@ -17,7 +19,7 @@ const config = {
       debug: false
     }
   },
-  scene: [Preloader, MainMenu, SettingsScene, GameScene, UIScene]
+  scene: [Preloader, MainMenu, SetupScene, SettingsScene, GameScene, UIScene]
 };
 
 export default new Phaser.Game(config);
