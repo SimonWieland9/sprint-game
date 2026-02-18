@@ -3,8 +3,8 @@ import { Player } from '../objects/Player';
 export class GameScene extends Phaser.Scene {
     constructor() {
         super('GameScene');
-        this.TRACK_LENGTH_METERS = 150;
-        this.PIXELS_PER_METER = 15; // "Arcade Scale": Short track, big players
+        this.TRACK_LENGTH_METERS = 100;
+        this.PIXELS_PER_METER = 22.5; // "Arcade Scale": Short track, big players
         this.FINISH_LINE_X = 100 + (this.TRACK_LENGTH_METERS * this.PIXELS_PER_METER);
     }
 
@@ -158,7 +158,7 @@ export class GameScene extends Phaser.Scene {
         graphics.strokePath();
 
         // Distance Markers (Neon Text)
-        for (let m = 25; m < this.TRACK_LENGTH_METERS; m += 25) { // Less clutter
+        for (let m = 25; m < 100; m += 25) { // Less clutter
             const x = 100 + (m * this.PIXELS_PER_METER);
             this.add.text(x, startY + totalHeight + 30, `${m}m`, {
                 fontSize: '24px',

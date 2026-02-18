@@ -206,15 +206,15 @@ export class Player {
 
                 if (reactionTime < 100) {
                     boostFactor = 1.0; // 100% Speed
-                    text = 'PERFECT!';
+                    text = 'PERFECT!\n' + (reactionTime / 1000).toFixed(3) + 's';
                     color = '#00ffff';
                 } else if (reactionTime < 200) {
                     boostFactor = 0.8; // 80% Speed
-                    text = 'GREAT!';
+                    text = 'GREAT!\n' + (reactionTime / 1000).toFixed(3) + 's';
                     color = '#00ff00';
                 } else if (reactionTime < 300) {
                     boostFactor = 0.6; // 60% Speed
-                    text = 'GOOD!';
+                    text = 'GOOD!\n' + (reactionTime / 1000).toFixed(3) + 's';
                     color = '#ffff00';
                 }
 
